@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+ <head>
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+   <link rel="shortcut icon" type="image/ico" href="snake.png" />
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+   <title> The Snake Game ! </title>
+ </head>
+ <body>
+	<div class="container">
+		<h2 class="center-align">Bienvenue sur Snake !<h2>
+		<h4 class="center-align">Combien de pomme pourrez-vous avaler avant de perdre ?</h4>
+		<div  class="center-align">
+			<p id="score">Score: 0</p>
+			<canvas id="myCanvas" width="500px" height="500px" style="border:1px solid black;margin-left: auto; margin-right:auto; display:inline; background-color:lightGreen;">
+			</canvas>
+		</div>
+    </div>
+ </body>
+ 
+ <script>
+	var canvas = document.getElementById('myCanvas');
+	var ctx = canvas.getContext("2d");
+	var onMenu = true;//si elle est false, alors le joueur est en train de jouer
+	var lvl1 = {x:100, y:50,width:300,height:75};
+	var lvl2 = {x:100, y:200,width:300,height:75};
+	var lvl3 = {x:100, y:350,width:300,height:75};
+	
+	var url = "http://localhost/snake/niveaux/niveau2.json";
+	var param = {
+		dimension:0,
+		delay:0,
+		food:0,
+		snake:0
+	};
+	var world;
+	var score = 0;
+	var direction = new Array("Up");//je fais un tableau pour faire une mémoire tampon au cas ou le joueur joue rapidement (les touches Z Q S et D marchent aussi !)
+	var gameInterval;
+
+	ft_draw_menu();
+	//le chargement du json se fait au clic sur un des niveaux
+	//le lancement du niveau (ft_start_level) se fait dans ft_load_json
+
+	function ft_start_level(){
+		ft_world_init();//la fonction initialisant le tableau 'world' avec des 0 pour les empl vide, des 1 pour les empl snake et 2 pour l'empl food
+		
+		canvas.width = param.dimension;
+		canvas.height = param.dimension;
+		ctx.clearRect(0, 0, param.dimension, param.dimension);
+		
+		gameInterval = setInterval(ft_game, param.delay);
+	}
+
+	function ft_game(){ 
+		//console.log("delay ok");
+		var temp;
+		var tempscore = score;
+		var startsnake;
+		var endsnake;
+		var effect;
+		
+		if(direction.length == 1)
+			temp = direction[0];
+		else
+			temp = direction.shift();
+		
+		if(temp == "Up" && param.snake[0][1] < 10)
+			ft_end_game();
+		else if(temp == "Down" && param.snake[0][1] > param.dimension-10)
+			ft_end_game();
+		else if(temp == "Right" && param.snake[1][0] > param.dimension-10)
+			ft_end_game();
+		else if(temp == "Left" && param.snake[1][0] < 10)
+			ft_end_game();
+		else if(temp == "Up"){
+			startsnake = new Array(param.snake[0][0], (param.snake[0][1])-10);
+			param.snake.unshift(startsnake);
+			effect = world[(param.snake[0][0])/10][(param.snake[0][1])/10];
+		}
+		else if(temp == "Down"){
+			startsnake = new Array(param.snake[0][0], (param.snake[0][1])+10);
+			param.snake.unshift(startsnake);
+			effect = world[(param.snake[0][0])/10][(param.snake[0][1])/10];
+		}
+		else if(temp == "Right"){
+			startsnake = new Array((param.snake[0][0])+10, param.snake[0][1]);
+			param.snake.unshift(startsnake);
+			effect = world[(param.snake[0][0])/10][(param.snake[0][1])/10];
+		}
+		else if(temp == "Left"){
+			startsnake = new Array((param.snake[0][0])-10, param.snake[0][1]);
+			param.snake.unshift(startsnake);
+			effect = world[(param.snake[0][0])/10][(param.snake[0][1])/10];
+		}
+		else
+			alert("Problème dans le tableau de direction");
+		
+		if(effect == 1)
+			ft_end_game();
+		else if(effect == 2)
+			ft_pick_berry();
+		
+		world[(param.snake[0][0])/10][(param.snake[0][1])/10] = 1;
+		
+		if(tempscore == score){
+			endsnake = param.snake.pop();
+			world[(endsnake[0])/10][(endsnake[1])/10] = 0;
+		}
+		
+		ft_refresh_map();
+	}
+	function ft_end_game(){
+		clearInterval(gameInterval);
+		document.getElementById("score").textContent = "Bien joué ! Le jeu s'arrête ici pour vous mais vous avez tout de même réalisé un score de "+score+" !!!";
+	}
+	//GESTION D'EVENEMENT
+	//Fonction de lancement des niveaux dans le menu
+	canvas.addEventListener('click', function(evt) {
+		var mousePos = getMousePos(canvas, evt);
+
+		if (isInside(mousePos,lvl1) && onMenu) {
+			url = "http://localhost/snake/niveaux/niveau.json";
+			ft_load_json();
+		}
+		else if (isInside(mousePos,lvl2) && onMenu) {
+			url = "http://localhost/snake/niveaux/niveau2.json";
+			ft_load_json();
+		}
+		else if (isInside(mousePos,lvl3) && onMenu) {
+			url = "http://localhost/snake/niveaux/niveau3.json";
+			ft_load_json();
+		}  
+	}, false);
+	//fonction de récupération des directions entrées
+	document.addEventListener("keydown", function(event) {
+		var keyCode = event.which;//Down = 40; Right = 39; Up = 38; Left = 37; Z = 90; Q = 81; S = 83; D = 68
+		if(keyCode == 40 || keyCode == 83){
+			if(direction[direction.length-1] != "Up")
+				direction.push("Down");
+		}
+		else if(keyCode == 39 || keyCode == 68){
+			if(direction[direction.length-1] != "Left")
+				direction.push("Right");
+		}
+		else if(keyCode == 38 || keyCode == 90){
+			if(direction[direction.length-1] != "Down")
+				direction.push("Up");
+		}
+		else if(keyCode == 37 || keyCode == 81){
+			if(direction[direction.length-1] != "Right")
+				direction.push("Left");
+		}
+	});
+	
+	//FONCTION UTILITAIRE
+	//renvoie la position de la souris dans le canvas
+	function getMousePos(canvas, event) {
+		var rect = canvas.getBoundingClientRect();
+		return {
+			x: event.clientX - rect.left,
+			y: event.clientY - rect.top
+		};
+	}
+	//renvoie true ou false selon si la position 'pos' de la souris est ou non dans un rectangle 'rect'
+	function isInside(pos, rect){
+		return (pos.x > rect.x && pos.x < rect.x+rect.width && pos.y < rect.y+rect.height && pos.y > rect.y)
+	}
+	//renvoie un nombre aléatoire compris entre 0 et max
+	function getRandomInt(max) {
+		return Math.floor(Math.random() * Math.floor(max));
+	}
+	//dessine le menu de choix du niveau
+	function ft_draw_menu(){
+		ctx.font = "30px Arial";
+		ctx.fillStyle = "green";
+		ctx.fillRect(100, 50, 300, 75);
+		ctx.fillStyle = "orange";
+		ctx.fillRect(100, 200, 300, 75);
+		ctx.fillStyle = "red";
+		ctx.fillRect(100, 350, 300, 75);
+		ctx.fillStyle = "black";
+		ctx.fillText("Niveau 1", 180, 100);
+		ctx.fillText("Niveau 2", 180, 250);
+		ctx.fillText("Niveau 3", 180, 400);
+	}
+	//charge les variables du fichier json de l'url dans param
+	function ft_load_json(){
+		var req = new XMLHttpRequest(); 
+		req.open("GET", url);
+		req.onerror = function() { 
+		console.log("Échec de chargement "+url); 
+		}; 
+		req.onload = function() { 
+			if (req.status === 200) { 
+				let data = JSON.parse((req.responseText)); 
+				// do what you have to do with 'data’ 
+				param.dimension = data.dimensions;
+				param.delay = data.delay;
+				param.food = data.food;
+				param.snake = data.snake;
+				console.log(param.dimension);
+			} else { 
+				console.log("Erreur " + req.status); 
+			}
+			//ft_test();
+			ft_start_level();
+		};
+		req.send();
+	}
+	//fonction initialisant la variable world
+	function ft_world_init(){//on va dire 0 = empty, 1 = snake et 2 = pomme
+		world = new Array(param.dimension/10);
+
+		for (var i = 0; i < world.length; i++) {
+			world[i] = new Array(param.dimension/10);
+			for(var j = 0; j < world[i].length; j++)
+				world[i][j] = 0;
+		}
+		for(var i = 0; i < param.snake.length; i++)
+			world[(param.snake[i][0])/10][(param.snake[i][1])/10] = 1;
+		for(var i = 0; i < param.food.length; i++)
+			world[(param.food[i][0])/10][(param.food[i][1])/10] = 2;
+		
+		console.log(world);
+	}
+	//actualise l'affichage de la map
+	function ft_refresh_map(){		
+		for(var i = 0; i < world.length; i++){
+			for(var j = 0; j < world[i].length; j++){
+				if(world[i][j] == 0){
+					ctx.clearRect(i*10, j*10, 10, 10);
+				}
+				if(world[i][j] == 1){
+					ctx.fillStyle = 'green';
+					ctx.fillRect(i*10, j*10, 10, 10);
+				}
+				if(world[i][j] == 2){
+					ctx.fillStyle = 'red';
+					ctx.fillRect(i*10, j*10, 10, 10);
+				}
+			}
+		}
+	}
+	//fonction executée lorsque le joueur mange une pomme
+	function ft_pick_berry(){
+		score++;
+		document.getElementById("score").textContent = "Score: "+score;
+		
+		var temp = 1;
+		var x;
+		var y;
+		
+		while(temp != 0){
+			x = getRandomInt(param.dimension/10);
+			y = getRandomInt(param.dimension/10);
+			temp = world[x][y];
+		}
+		world[x][y] = 2;
+	}
+
+ </script>
+ 
+</html>
