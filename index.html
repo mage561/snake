@@ -26,7 +26,7 @@
 	var lvl2 = {x:100, y:200,width:300,height:75};
 	var lvl3 = {x:100, y:350,width:300,height:75};
 	
-	var url = "http://localhost/snake/niveaux/niveau2.json";
+	var url = "https://snake.pithou.fr/niveaux/niveau.json";
 	var param = {
 		dimension:0,
 		delay:0,
@@ -120,15 +120,16 @@
 		var mousePos = getMousePos(canvas, evt);
 
 		if (isInside(mousePos,lvl1) && onMenu) {
-			url = "http://localhost/snake/niveaux/niveau.json";
+		
+			url = "https://snake.pithou.fr/niveaux/niveau.json";
 			ft_load_json();
 		}
 		else if (isInside(mousePos,lvl2) && onMenu) {
-			url = "http://localhost/snake/niveaux/niveau2.json";
+			url = "https://snake.pithou.fr/niveaux/niveau2.json";
 			ft_load_json();
 		}
 		else if (isInside(mousePos,lvl3) && onMenu) {
-			url = "http://localhost/snake/niveaux/niveau3.json";
+			url = "https://snake.pithou.fr/niveaux/niveau3.json";
 			ft_load_json();
 		}  
 	}, false);
